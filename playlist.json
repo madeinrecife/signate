@@ -1,0 +1,14 @@
+{
+  "playlist": [
+    {
+      "tipo": "imagem",
+      "url": "https://via.placeholder.com/1920x1080/2c3e50/ffffff?text=Bem-vindo+ao+Sparta",
+      "duracao": 8
+    },
+    {
+      "tipo": "video",
+      "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "duracao": 12
+    }
+  ]
+}

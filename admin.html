@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sparta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: #1e1e2f; color: white; padding: 20px; font-family: system-ui; }
+    .admin-panel { max-width: 800px; margin: 0 auto; }
+    input, button { padding: 10px; margin: 5px; border-radius: 8px; border: none; }
+    button { background: #2c7da0; color: white; cursor: pointer; }
+    .playlist-item { background: #2a2a3b; margin: 8px 0; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="admin-panel">
+    <h1>⚙️ Painel de Controle - Sparta Indoor</h1>
+    <div>
+      <input type="text" id="mediaUrl" placeholder="URL da mídia (imagem, vídeo, PDF)">
+      <select id="mediaType">
+        <option value="imagem">Imagem</option>
+        <option value="video">Vídeo</option>
+        <option value="pdf">PDF</option>
+      </select>
+      <input type="number" id="duration" placeholder="Duração (segundos)" value="10">
+      <button id="addBtn">➕ Adicionar à playlist</button>
+    </div>
+    <h3>Playlist atual</h3>
+    <div id="playlistContainer"></div>
+    <button id="publishBtn">📡 Publicar player (atualizar cache)</button>
+    <button id="logoutBtn">🚪 Sair</button>
+  </div>
+  <script src="js/db.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
