@@ -71,9 +71,18 @@ function showItem() {
 
   switch (item.tipo) {
     case 'imagem':
-      playerDiv.innerHTML = `<img src="${item.url}" alt="slide" style="width:100%;height:100%;object-fit:contain" loading="eager" onerror="this.src='https://via.placeholder.com/1920x1080?error=404'">`;
-      scheduleNext(item.duracao || 10);
-      break;
+  const img = document.createElement('img');
+  img.style.cssText = 'width:100%;height:100%;object-fit:contain';
+  img.src = item.url;
+  img.alt = 'slide';
+  img.onerror = () => {
+    console.warn('Imagem não carregou:', item.url);
+    nextItem(); // pula para o próximo item
+  };
+  playerDiv.innerHTML = '';
+  playerDiv.appendChild(img);
+  scheduleNext(item.duracao || 10);
+  break;
     case 'video':
       playerDiv.innerHTML = `<video style="width:100%;height:100%;" src="${item.url}" autoplay muted playsinline></video>`;
       const video = playerDiv.querySelector('video');
