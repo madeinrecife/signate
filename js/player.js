@@ -1,4 +1,4 @@
-// Player principal com suporte a cache, duração para vídeos e recuperação de falhas
+// js/player.js - Player principal com suporte a recarga dinâmica da playlist
 let currentIndex = 0;
 let playlist = [];
 let timeoutId = null;
@@ -22,34 +22,38 @@ document.getElementById('fullscreenBtn').addEventListener('click', () => {
   }
 });
 
-// Evita suspensão de tela (Wake Lock)
+// Wake Lock (tela sempre acesa)
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => console.log('Wake Lock released'));
+      wakeLock.addEventListener('release', () => console.log('Wake Lock liberado'));
     }
   } catch (err) { console.warn('Wake Lock não suportado', err); }
 }
 requestWakeLock();
 
-// Carrega playlist (primeiro tenta IndexedDB, depois playlist.json)
+// Carrega playlist do IndexedDB (fallback para playlist.json)
 async function loadPlaylist() {
   try {
-    const dbPlaylist = await loadPlaylistFromDB();
-    if (dbPlaylist && dbPlaylist.length > 0) {
-      playlist = dbPlaylist;
-    } else {
+    let items = await loadPlaylistFromDB();
+    if (!items || items.length === 0) {
+      // Fallback: carrega do arquivo JSON estático
       const res = await fetch('playlist.json');
       const data = await res.json();
-      playlist = data.playlist;
-      await savePlaylist(playlist);
+      items = data.playlist;
+      if (items && items.length) await savePlaylist(items);
     }
-    currentIndex = 0;
-    showItem();
+    if (items && items.length) {
+      playlist = items;
+      currentIndex = currentIndex % playlist.length;
+      showItem();
+    } else {
+      throw new Error('Playlist vazia');
+    }
   } catch (error) {
-    console.error('Erro ao carregar playlist, usando fallback', error);
-    playlist = [{ tipo: 'imagem', url: 'https://via.placeholder.com/1920x1080?text=Erro+de+conexão', duracao: 5 }];
+    console.error('Erro ao carregar playlist:', error);
+    playlist = [{ tipo: 'imagem', url: 'https://via.placeholder.com/1920x1080?text=Sem+playlist', duracao: 5 }];
     showItem();
   }
 }
@@ -61,13 +65,13 @@ function showItem() {
     currentVideo.src = '';
     currentVideo = null;
   }
-  
+
   const item = playlist[currentIndex];
   if (!item) return;
-  
+
   switch (item.tipo) {
     case 'imagem':
-      playerDiv.innerHTML = `<img src="${item.url}" alt="slide" style="width:100%;height:100%;object-fit:contain" loading="eager">`;
+      playerDiv.innerHTML = `<img src="${item.url}" alt="slide" style="width:100%;height:100%;object-fit:contain" loading="eager" onerror="this.src='https://via.placeholder.com/1920x1080?error=404'">`;
       scheduleNext(item.duracao || 10);
       break;
     case 'video':
@@ -96,13 +100,43 @@ function scheduleNext(seconds) {
 }
 
 function nextItem() {
+  if (playlist.length === 0) {
+    loadPlaylist();
+    return;
+  }
   currentIndex = (currentIndex + 1) % playlist.length;
   showItem();
 }
 
-// Iniciar player
+// Recarregar playlist sob demanda (usado pelo admin)
+async function reloadPlaylist() {
+  console.log('🔄 Recarregando playlist por solicitação do admin');
+  const oldIndex = currentIndex;
+  await loadPlaylist();  // atualiza a variável 'playlist'
+  // Tenta manter o mesmo índice relativo, mas evita erro se playlist mudou
+  if (currentIndex >= playlist.length) currentIndex = 0;
+  showItem();
+}
+
+// Escuta mensagens do Service Worker (admin publicou)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data && event.data.type === 'PLAYLIST_UPDATED') {
+      reloadPlaylist();
+    }
+  });
+}
+
+// Alternativa: BroadcastChannel (funciona mesmo sem service worker ativo)
+const channel = new BroadcastChannel('sparta_player');
+channel.onmessage = (event) => {
+  if (event.data && event.data.action === 'reloadPlaylist') {
+    reloadPlaylist();
+  }
+};
+
+// Iniciar
 loadPlaylist();
 
-// Recuperar foco após perda de conexão
+// Recuperar conexão
 window.addEventListener('online', () => loadPlaylist());
-window.addEventListener('offline', () => console.log('Modo offline ativo'));
